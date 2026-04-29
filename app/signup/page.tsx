@@ -1,27 +1,99 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function SignupPage() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get("role") || "student";
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSignup = async () => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const user = data.user;
+
+    if (user) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert([
+          {
+            id: user.id,
+            full_name: fullName,
+            email: email,
+            role: role,
+          },
+        ]);
+
+      if (profileError) {
+        alert(profileError.message);
+        return;
+      }
+
+      alert("Account created successfully!");
+    }
+  };
+
   return (
     <main style={page}>
       <section style={card}>
-        <Link href="/" style={brand}>TaskForge</Link>
+        <Link href="/" style={brand}>
+          TaskForge
+        </Link>
 
         <h1 style={title}>Create your account</h1>
-        <p style={subtitle}>Start building real experience through real projects.</p>
 
-        <form style={form}>
-          <input style={input} placeholder="Full name" />
-          <input style={input} placeholder="Email address" type="email" />
-          <input style={input} placeholder="Password" type="password" />
+        <p style={subtitle}>
+          Start building real experience through real projects.
+        </p>
 
-          <button style={button} type="button">
-            Continue
+        <div style={form}>
+          <input
+            style={input}
+            placeholder="Full name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+
+          <input
+            style={input}
+            placeholder="Email address"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <input
+            style={input}
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <button style={button} onClick={handleSignup}>
+            Continue as {role}
           </button>
-        </form>
+        </div>
 
         <p style={bottomText}>
           Already have an account?{" "}
-          <Link href="/login" style={link}>Log in</Link>
+          <Link href="/login" style={link}>
+            Log in
+          </Link>
         </p>
       </section>
     </main>
@@ -36,8 +108,6 @@ const page = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "24px",
-  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
 const card = {
@@ -46,8 +116,6 @@ const card = {
   padding: "42px",
   borderRadius: "32px",
   background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  boxShadow: "0 30px 90px rgba(0,0,0,0.45)",
 };
 
 const brand = {
@@ -59,16 +127,12 @@ const brand = {
 
 const title = {
   fontSize: "44px",
-  lineHeight: "1",
-  letterSpacing: "-0.05em",
-  margin: "34px 0 14px",
+  margin: "20px 0",
 };
 
 const subtitle = {
-  color: "#a1a1aa",
-  fontSize: "17px",
-  lineHeight: "1.5",
-  marginBottom: "30px",
+  color: "#aaa",
+  marginBottom: "20px",
 };
 
 const form = {
@@ -77,36 +141,27 @@ const form = {
 };
 
 const input = {
-  width: "100%",
   padding: "16px",
   borderRadius: "16px",
-  border: "1px solid rgba(255,255,255,0.14)",
-  background: "rgba(255,255,255,0.08)",
+  border: "none",
+  background: "#1a1a1a",
   color: "white",
-  fontSize: "16px",
-  outline: "none",
 };
 
 const button = {
-  marginTop: "8px",
   padding: "16px",
   borderRadius: "999px",
   border: "none",
   background: "white",
   color: "black",
   fontWeight: 700,
-  fontSize: "16px",
   cursor: "pointer",
 };
 
 const bottomText = {
-  marginTop: "24px",
-  color: "#a1a1aa",
-  textAlign: "center" as const,
+  marginTop: "20px",
 };
 
 const link = {
   color: "white",
-  textDecoration: "none",
-  fontWeight: 600,
 };
