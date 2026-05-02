@@ -1,26 +1,94 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async () => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const user = data.user;
+
+    if (!user) {
+      alert("Login failed. Please try again.");
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      alert(profileError.message);
+      return;
+    }
+
+    if (profile.role === "student") {
+      router.push("/student");
+    } else if (profile.role === "organization") {
+      router.push("/organization");
+    } else if (profile.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/");
+    }
+  };
+
   return (
     <main style={page}>
       <section style={card}>
-        <Link href="/" style={brand}>TaskForge</Link>
+        <Link href="/" style={brand}>
+          TaskForge
+        </Link>
 
         <h1 style={title}>Welcome back</h1>
+
         <p style={subtitle}>Log in to continue your work.</p>
 
-        <form style={form}>
-          <input style={input} placeholder="Email address" type="email" />
-          <input style={input} placeholder="Password" type="password" />
+        <div style={form}>
+          <input
+            style={input}
+            placeholder="Email address"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-          <button style={button} type="button">
+          <input
+            style={input}
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <button style={button} onClick={handleLogin}>
             Log in
           </button>
-        </form>
+        </div>
 
         <p style={bottomText}>
           New to TaskForge?{" "}
-          <Link href="/signup" style={link}>Create account</Link>
+          <Link href="/signup" style={link}>
+            Create account
+          </Link>
         </p>
       </section>
     </main>
@@ -35,8 +103,6 @@ const page = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "24px",
-  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
 const card = {
@@ -45,8 +111,6 @@ const card = {
   padding: "42px",
   borderRadius: "32px",
   background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  boxShadow: "0 30px 90px rgba(0,0,0,0.45)",
 };
 
 const brand = {
@@ -58,16 +122,12 @@ const brand = {
 
 const title = {
   fontSize: "44px",
-  lineHeight: "1",
-  letterSpacing: "-0.05em",
-  margin: "34px 0 14px",
+  margin: "20px 0",
 };
 
 const subtitle = {
-  color: "#a1a1aa",
-  fontSize: "17px",
-  lineHeight: "1.5",
-  marginBottom: "30px",
+  color: "#aaa",
+  marginBottom: "20px",
 };
 
 const form = {
@@ -76,36 +136,27 @@ const form = {
 };
 
 const input = {
-  width: "100%",
   padding: "16px",
   borderRadius: "16px",
-  border: "1px solid rgba(255,255,255,0.14)",
-  background: "rgba(255,255,255,0.08)",
+  border: "none",
+  background: "#1a1a1a",
   color: "white",
-  fontSize: "16px",
-  outline: "none",
 };
 
 const button = {
-  marginTop: "8px",
   padding: "16px",
   borderRadius: "999px",
   border: "none",
   background: "white",
   color: "black",
   fontWeight: 700,
-  fontSize: "16px",
   cursor: "pointer",
 };
 
 const bottomText = {
-  marginTop: "24px",
-  color: "#a1a1aa",
-  textAlign: "center" as const,
+  marginTop: "20px",
 };
 
 const link = {
   color: "white",
-  textDecoration: "none",
-  fontWeight: 600,
 };
