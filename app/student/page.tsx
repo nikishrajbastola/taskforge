@@ -32,6 +32,33 @@ export default function StudentDashboard() {
     fetchTasks();
   }, []);
 
+  const handleApply = async (taskId: string) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert("You must be logged in to apply.");
+      return;
+    }
+
+    const { error } = await supabase.from("applications").insert([
+      {
+        task_id: taskId,
+        student_id: user.id,
+        message: "I am interested in this project.",
+        status: "pending",
+      },
+    ]);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert("Application submitted!");
+  };
+
   return (
     <main style={page}>
       <h1 style={title}>Available Projects</h1>
@@ -50,7 +77,9 @@ export default function StudentDashboard() {
               <span style={chip}>{task.duration || "Duration not listed"}</span>
             </div>
 
-            <button style={button}>Apply</button>
+            <button style={button} onClick={() => handleApply(task.id)}>
+              Apply
+            </button>
           </div>
         ))}
       </section>
