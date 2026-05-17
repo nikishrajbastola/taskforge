@@ -14,12 +14,17 @@ type Task = {
 
 export default function StudentProjectsPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [appliedTaskIds, setAppliedTaskIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTasks();
+    fetchApplications();
   }, []);
 
   const fetchTasks = async () => {
+    setLoading(true);
+
     const { data, error } = await supabase
       .from("tasks")
       .select("id, title, description, skills, duration")
@@ -27,10 +32,33 @@ export default function StudentProjectsPage() {
 
     if (error) {
       alert(error.message);
+      setLoading(false);
       return;
     }
 
     setTasks(data || []);
+    setLoading(false);
+  };
+
+  const fetchApplications = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("applications")
+      .select("task_id")
+      .eq("student_id", user.id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const ids = data.map((application) => application.task_id);
+    setAppliedTaskIds(ids);
   };
 
   const handleApply = async (taskId: string) => {
@@ -57,46 +85,107 @@ export default function StudentProjectsPage() {
       return;
     }
 
-    alert("Application submitted!");
+    setAppliedTaskIds([...appliedTaskIds, taskId]);
   };
 
   return (
     <main style={page}>
       <aside style={sidebar}>
-        <h2 style={brand}>TaskForge</h2>
+        <Link href="/" style={brand}>
+          TaskForge
+        </Link>
 
         <nav style={nav}>
-          <Link href="/student" style={navItem}>Overview</Link>
-          <Link href="/student/projects" style={activeNav}>Browse Projects</Link>
-          <Link href="/student/applications" style={navItem}>My Applications</Link>
-          <Link href="/student/profile" style={navItem}>Profile</Link>
+          <Link href="/student" style={navItem}>
+            Overview
+          </Link>
+
+          <Link href="/student/projects" style={activeNav}>
+            Browse Projects
+          </Link>
+
+          <Link href="/student/applications" style={navItem}>
+            My Applications
+          </Link>
+
+          <Link href="/student/profile" style={navItem}>
+            Profile
+          </Link>
         </nav>
       </aside>
 
       <section style={content}>
-        <p style={eyebrow}>PROJECT MARKETPLACE</p>
-        <h1 style={title}>Available Projects</h1>
-        <p style={subtitle}>
-          Apply to real projects from organizations and build credible experience.
-        </p>
+        <header style={header}>
+          <div>
+            <p style={eyebrow}>PROJECT MARKETPLACE</p>
 
-        <section style={grid}>
-          {tasks.map((task) => (
-            <div key={task.id} style={card}>
-              <h2 style={cardTitle}>{task.title}</h2>
-              <p style={description}>{task.description}</p>
+            <h1 style={title}>Browse Projects</h1>
 
-              <div style={meta}>
-                <span style={chip}>{task.skills || "Skills not listed"}</span>
-                <span style={chip}>{task.duration || "Duration not listed"}</span>
-              </div>
+            <p style={subtitle}>
+              Discover real-world projects and gain experience.
+            </p>
+          </div>
 
-              <button style={button} onClick={() => handleApply(task.id)}>
-                Apply
-              </button>
-            </div>
-          ))}
-        </section>
+          <div style={countPill}>
+            {tasks.length} projects
+          </div>
+        </header>
+
+        {loading ? (
+          <div style={emptyState}>
+            Loading projects...
+          </div>
+        ) : tasks.length === 0 ? (
+          <div style={emptyState}>
+            No projects available yet.
+          </div>
+        ) : (
+          <section style={grid}>
+            {tasks.map((task) => {
+              const hasApplied = appliedTaskIds.includes(task.id);
+
+              return (
+                <div key={task.id} style={card}>
+                  <div>
+                    <h2 style={cardTitle}>{task.title}</h2>
+
+                    <p style={description}>
+                      {task.description}
+                    </p>
+                  </div>
+
+                  <div style={footer}>
+                    <div style={meta}>
+                      <span style={chip}>
+                        {task.skills || "No skills"}
+                      </span>
+
+                      <span style={chip}>
+                        {task.duration || "Flexible"}
+                      </span>
+                    </div>
+
+                    <button
+                      style={
+                        hasApplied
+                          ? appliedButton
+                          : button
+                      }
+                      onClick={() =>
+                        handleApply(task.id)
+                      }
+                      disabled={hasApplied}
+                    >
+                      {hasApplied
+                        ? "Applied"
+                        : "Apply"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        )}
       </section>
     </main>
   );
@@ -108,7 +197,8 @@ const page = {
   color: "white",
   display: "grid",
   gridTemplateColumns: "260px 1fr",
-  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontFamily:
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
 const sidebar = {
@@ -118,8 +208,12 @@ const sidebar = {
 };
 
 const brand = {
+  color: "white",
+  textDecoration: "none",
   fontSize: "22px",
+  fontWeight: 700,
   marginBottom: "40px",
+  display: "block",
 };
 
 const nav = {
@@ -128,7 +222,7 @@ const nav = {
 };
 
 const navItem = {
-  color: "#aaa",
+  color: "#8f8f8f",
   textDecoration: "none",
   padding: "12px 14px",
   borderRadius: "12px",
@@ -144,73 +238,115 @@ const activeNav = {
 
 const content = {
   padding: "48px",
+  maxWidth: "1200px",
+};
+
+const header = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  marginBottom: "28px",
 };
 
 const eyebrow = {
-  color: "#60a5fa",
-  fontSize: "13px",
+  color: "#a1a1aa",
+  fontSize: "12px",
   fontWeight: 800,
   letterSpacing: "0.16em",
 };
 
 const title = {
-  fontSize: "52px",
-  margin: "8px 0",
-  letterSpacing: "-0.05em",
+  fontSize: "38px",
+  margin: "6px 0",
+  letterSpacing: "-0.04em",
 };
 
 const subtitle = {
-  color: "#aaa",
-  fontSize: "18px",
-  marginBottom: "32px",
+  color: "#8f8f8f",
+  fontSize: "16px",
+};
+
+const countPill = {
+  padding: "8px 12px",
+  borderRadius: "999px",
+  background: "#111",
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#d4d4d8",
+  fontSize: "13px",
+  fontWeight: 700,
 };
 
 const grid = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-  gap: "20px",
+  gap: "18px",
 };
 
 const card = {
-  padding: "24px",
-  borderRadius: "24px",
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.1)",
+  display: "flex",
+  flexDirection: "column" as const,
+  justifyContent: "space-between",
+  minHeight: "240px",
+  padding: "22px",
+  borderRadius: "18px",
+  background: "#0d0d0d",
+  border: "1px solid rgba(255,255,255,0.08)",
 };
 
 const cardTitle = {
-  fontSize: "24px",
-  marginBottom: "12px",
+  fontSize: "20px",
+  marginBottom: "10px",
 };
 
 const description = {
-  color: "#b5b5b5",
+  color: "#9ca3af",
   lineHeight: "1.6",
+  fontSize: "14px",
+};
+
+const footer = {
+  marginTop: "22px",
 };
 
 const meta = {
   display: "flex",
-  gap: "10px",
+  gap: "8px",
   flexWrap: "wrap" as const,
-  marginTop: "18px",
-  marginBottom: "20px",
+  marginBottom: "18px",
 };
 
 const chip = {
-  padding: "8px 12px",
+  padding: "6px 10px",
   borderRadius: "999px",
-  background: "rgba(255,255,255,0.08)",
-  color: "#d4d4d8",
-  fontSize: "13px",
+  background: "#141414",
+  border: "1px solid rgba(255,255,255,0.06)",
+  color: "#a1a1aa",
+  fontSize: "12px",
+  fontWeight: 600,
 };
 
 const button = {
   width: "100%",
-  padding: "14px",
-  borderRadius: "999px",
-  border: "none",
-  background: "white",
-  color: "black",
+  padding: "12px",
+  borderRadius: "12px",
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "#141414",
+  color: "white",
   fontWeight: 700,
   cursor: "pointer",
+};
+
+const appliedButton = {
+  ...button,
+  background: "#0f0f0f",
+  color: "#666",
+  cursor: "not-allowed",
+};
+
+const emptyState = {
+  padding: "28px",
+  borderRadius: "18px",
+  background: "#0d0d0d",
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#8f8f8f",
 };

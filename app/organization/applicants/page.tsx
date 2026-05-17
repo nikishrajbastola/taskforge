@@ -4,29 +4,50 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+type StudentProfile =
+  | {
+      full_name: string | null;
+      email: string | null;
+      resume_url: string | null;
+    }
+  | {
+      full_name: string | null;
+      email: string | null;
+      resume_url: string | null;
+    }[]
+  | null;
+
+type Task =
+  | {
+      title: string;
+      organization_id: string;
+    }
+  | {
+      title: string;
+      organization_id: string;
+    }[]
+  | null;
+
 type Application = {
   id: string;
   status: string | null;
   message: string | null;
   student_id: string;
-  tasks:
-    | {
-        title: string;
-      }
-    | {
-        title: string;
-      }[]
-    | null;
+  profiles: StudentProfile;
+  tasks: Task;
 };
 
 export default function OrganizationApplicantsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchApplications();
   }, []);
 
   const fetchApplications = async () => {
+    setLoading(true);
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -44,70 +65,219 @@ export default function OrganizationApplicantsPage() {
         message,
         student_id,
         tasks (
-          title
+          title,
+          organization_id
+        ),
+        profiles:student_id (
+          full_name,
+          email,
+          resume_url
         )
       `)
       .order("created_at", { ascending: false });
 
     if (error) {
       alert(error.message);
+      setLoading(false);
       return;
     }
 
-    setApplications(data || []);
+    const filteredApplications =
+      data?.filter((application) => {
+        const task = Array.isArray(application.tasks)
+          ? application.tasks[0]
+          : application.tasks;
+
+        return task?.organization_id === user.id;
+      }) || [];
+
+    setApplications(filteredApplications);
+    setLoading(false);
+  };
+
+  const updateStatus = async (applicationId: string, status: string) => {
+    const { error } = await supabase
+      .from("applications")
+      .update({ status })
+      .eq("id", applicationId);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setApplications((prev) =>
+      prev.map((application) =>
+        application.id === applicationId
+          ? { ...application, status }
+          : application
+      )
+    );
+  };
+
+  const getStatusStyle = (status: string | null) => {
+    const base = {
+      padding: "6px 10px",
+      borderRadius: "999px",
+      fontWeight: 700,
+      fontSize: "11px",
+      letterSpacing: "0.08em",
+      textTransform: "uppercase" as const,
+      border: "1px solid rgba(255,255,255,0.08)",
+      whiteSpace: "nowrap" as const,
+    };
+
+    if (status === "accepted") {
+      return {
+        ...base,
+        background: "rgba(34,197,94,0.08)",
+        color: "#86efac",
+        border: "1px solid rgba(34,197,94,0.2)",
+      };
+    }
+
+    if (status === "rejected") {
+      return {
+        ...base,
+        background: "rgba(239,68,68,0.08)",
+        color: "#fca5a5",
+        border: "1px solid rgba(239,68,68,0.2)",
+      };
+    }
+
+    return {
+      ...base,
+      background: "rgba(245,158,11,0.08)",
+      color: "#fcd34d",
+      border: "1px solid rgba(245,158,11,0.2)",
+    };
   };
 
   return (
     <main style={page}>
       <aside style={sidebar}>
-        <Link href="/" style={brand}>TaskForge</Link>
+        <Link href="/" style={brand}>
+          TaskForge
+        </Link>
 
         <nav style={nav}>
-          <Link href="/organization" style={navItem}>Overview</Link>
-          <Link href="/organization/tasks" style={navItem}>My Tasks</Link>
-          <Link href="/organization/applicants" style={activeNav}>Applicants</Link>
-          <Link href="/organization/post-task" style={navItem}>Post Task</Link>
+          <Link href="/organization" style={navItem}>
+            Overview
+          </Link>
+          <Link href="/organization/tasks" style={navItem}>
+            My Tasks
+          </Link>
+          <Link href="/organization/applicants" style={activeNav}>
+            Applicants
+          </Link>
+          <Link href="/organization/post-task" style={navItem}>
+            Post Task
+          </Link>
         </nav>
       </aside>
 
       <section style={content}>
-        <p style={eyebrow}>APPLICATION MANAGEMENT</p>
+        <header style={header}>
+          <div>
+            <p style={eyebrow}>APPLICATIONS</p>
+            <h1 style={title}>Applicants</h1>
+            <p style={subtitle}>
+              Review student applications across your posted projects.
+            </p>
+          </div>
 
-        <h1 style={title}>Applicants</h1>
+          <div style={countPill}>
+            {applications.length} total
+          </div>
+        </header>
 
-        <p style={subtitle}>
-          Review students who applied to your projects.
-        </p>
+        {loading ? (
+          <div style={emptyState}>Loading applicants...</div>
+        ) : applications.length === 0 ? (
+          <div style={emptyState}>No applications yet.</div>
+        ) : (
+          <section style={panel}>
+            <div style={tableHeader}>
+              <span>Student</span>
+              <span>Project</span>
+              <span>Status</span>
+              <span>Actions</span>
+            </div>
 
-        <div style={list}>
-          {applications.map((application) => {
-            const task = Array.isArray(application.tasks)
-              ? application.tasks[0]
-              : application.tasks;
+            <div style={rows}>
+              {applications.map((application) => {
+                const task = Array.isArray(application.tasks)
+                  ? application.tasks[0]
+                  : application.tasks;
 
-            return (
-              <div key={application.id} style={card}>
-                <div>
-                  <h2 style={cardTitle}>
-                    {task?.title || "Untitled project"}
-                  </h2>
+                const student = Array.isArray(application.profiles)
+                  ? application.profiles[0]
+                  : application.profiles;
 
-                  <p style={description}>
-                    {application.message || "No application message provided."}
-                  </p>
+                return (
+                  <div key={application.id} style={row}>
+                    <div>
+                      <p style={studentName}>
+                        {student?.full_name || "Unknown student"}
+                      </p>
+                      <p style={studentMeta}>
+                        {student?.email || "No email available"}
+                      </p>
 
-                  <p style={studentId}>
-                    Student ID: {application.student_id}
-                  </p>
-                </div>
+                      {student?.resume_url ? (
+                        <a
+                          href={student.resume_url}
+                          target="_blank"
+                          style={resumeLink}
+                        >
+                          View resume
+                        </a>
+                      ) : (
+                        <p style={muted}>No resume uploaded</p>
+                      )}
+                    </div>
 
-                <span style={statusBadge}>
-                  {application.status || "pending"}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                    <div>
+                      <p style={projectTitle}>
+                        {task?.title || "Untitled project"}
+                      </p>
+                      <p style={message}>
+                        {application.message ||
+                          "No application message provided."}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span style={getStatusStyle(application.status)}>
+                        {(application.status || "pending").toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div style={actions}>
+                      <button
+                        style={acceptButton}
+                        onClick={() =>
+                          updateStatus(application.id, "accepted")
+                        }
+                      >
+                        Accept
+                      </button>
+
+                      <button
+                        style={rejectButton}
+                        onClick={() =>
+                          updateStatus(application.id, "rejected")
+                        }
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </section>
     </main>
   );
@@ -143,7 +313,7 @@ const nav = {
 };
 
 const navItem = {
-  color: "#aaa",
+  color: "#8f8f8f",
   textDecoration: "none",
   padding: "12px 14px",
   borderRadius: "12px",
@@ -158,65 +328,145 @@ const activeNav = {
 };
 
 const content = {
-  padding: "56px",
+  padding: "48px",
+  maxWidth: "1200px",
+};
+
+const header = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  marginBottom: "28px",
 };
 
 const eyebrow = {
-  color: "#c084fc",
-  fontSize: "13px",
+  color: "#a1a1aa",
+  fontSize: "12px",
   fontWeight: 800,
   letterSpacing: "0.16em",
 };
 
 const title = {
-  fontSize: "52px",
-  margin: "8px 0",
-  letterSpacing: "-0.05em",
+  fontSize: "38px",
+  margin: "6px 0",
+  letterSpacing: "-0.04em",
 };
 
 const subtitle = {
-  color: "#aaa",
-  fontSize: "18px",
-  marginBottom: "32px",
+  color: "#8f8f8f",
+  fontSize: "16px",
 };
 
-const list = {
-  display: "grid",
-  gap: "16px",
-};
-
-const card = {
-  padding: "24px",
-  borderRadius: "24px",
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  display: "flex",
-  justifyContent: "space-between",
-  gap: "20px",
-};
-
-const cardTitle = {
-  fontSize: "24px",
-  marginBottom: "12px",
-};
-
-const description = {
-  color: "#b5b5b5",
-  lineHeight: "1.6",
-};
-
-const studentId = {
-  marginTop: "14px",
-  color: "#888",
-  fontSize: "14px",
-};
-
-const statusBadge = {
-  height: "fit-content",
+const countPill = {
   padding: "8px 12px",
   borderRadius: "999px",
-  background: "rgba(192,132,252,0.14)",
-  color: "#c084fc",
+  background: "#111",
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#d4d4d8",
+  fontSize: "13px",
+  fontWeight: 700,
+};
+
+const panel = {
+  borderRadius: "18px",
+  background: "#0d0d0d",
+  border: "1px solid rgba(255,255,255,0.08)",
+  overflow: "hidden",
+};
+
+const tableHeader = {
+  display: "grid",
+  gridTemplateColumns: "1.2fr 1.4fr 0.6fr 0.8fr",
+  gap: "20px",
+  padding: "14px 18px",
+  borderBottom: "1px solid rgba(255,255,255,0.08)",
+  color: "#71717a",
+  fontSize: "12px",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase" as const,
+};
+
+const rows = {
+  display: "grid",
+};
+
+const row = {
+  display: "grid",
+  gridTemplateColumns: "1.2fr 1.4fr 0.6fr 0.8fr",
+  gap: "20px",
+  padding: "18px",
+  borderBottom: "1px solid rgba(255,255,255,0.06)",
+  alignItems: "center",
+};
+
+const studentName = {
+  fontSize: "15px",
+  fontWeight: 700,
+  marginBottom: "4px",
+};
+
+const studentMeta = {
+  color: "#8f8f8f",
+  fontSize: "13px",
+  marginBottom: "6px",
+};
+
+const resumeLink = {
+  color: "#d4d4d8",
+  textDecoration: "none",
+  fontSize: "13px",
+  fontWeight: 700,
+};
+
+const muted = {
+  color: "#666",
+  fontSize: "13px",
+};
+
+const projectTitle = {
+  fontSize: "15px",
+  fontWeight: 700,
+  marginBottom: "4px",
+};
+
+const message = {
+  color: "#8f8f8f",
+  fontSize: "13px",
+  lineHeight: "1.5",
+};
+
+const actions = {
+  display: "flex",
+  gap: "8px",
+};
+
+const acceptButton = {
+  padding: "8px 12px",
+  borderRadius: "10px",
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "#141414",
+  color: "#d4d4d8",
   fontWeight: 700,
   fontSize: "13px",
+  cursor: "pointer",
+};
+
+const rejectButton = {
+  padding: "8px 12px",
+  borderRadius: "10px",
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "#141414",
+  color: "#d4d4d8",
+  fontWeight: 700,
+  fontSize: "13px",
+  cursor: "pointer",
+};
+
+const emptyState = {
+  padding: "28px",
+  borderRadius: "18px",
+  background: "#0d0d0d",
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#8f8f8f",
 };

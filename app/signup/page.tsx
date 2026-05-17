@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function SignupPage() {
+function SignupContent() {
   const searchParams = useSearchParams();
   const role = searchParams.get("role") || "student";
 
@@ -97,6 +97,14 @@ export default function SignupPage() {
         </p>
       </section>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<main style={page}>Loading...</main>}>
+      <SignupContent />
+    </Suspense>
   );
 }
 
