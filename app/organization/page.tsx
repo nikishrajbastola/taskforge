@@ -24,16 +24,23 @@ export default function OrganizationOverviewPage() {
           <Link href="/organization/post-task" style={navItem}>
             Post Task
           </Link>
+
+          <Link href="/organization/profile" style={navItem}>
+            Profile
+          </Link>
         </nav>
       </aside>
 
       <section style={content}>
         <p style={eyebrow}>ORGANIZATION DASHBOARD</p>
 
-        <h1 style={title}>Manage your organization workflow.</h1>
+        <h1 style={title}>
+          Manage your organization workflow.
+        </h1>
 
         <p style={subtitle}>
-          Post projects, review applicants, and manage student collaboration.
+          Post projects, review applicants, and manage
+          student collaboration.
         </p>
 
         <section style={grid}>
@@ -41,23 +48,44 @@ export default function OrganizationOverviewPage() {
             <h2 style={cardTitle}>My Tasks</h2>
 
             <p style={cardText}>
-              View and manage all projects posted by your organization.
+              View and manage all projects posted by
+              your organization.
             </p>
           </Link>
 
-          <Link href="/organization/applicants" style={card}>
+          <Link
+            href="/organization/applicants"
+            style={card}
+          >
             <h2 style={cardTitle}>Applicants</h2>
 
             <p style={cardText}>
-              Review students who applied to your projects.
+              Review students who applied to your
+              projects.
             </p>
           </Link>
 
-          <Link href="/organization/post-task" style={card}>
+          <Link
+            href="/organization/post-task"
+            style={card}
+          >
             <h2 style={cardTitle}>Post a Task</h2>
 
             <p style={cardText}>
-              Create a new project and start receiving applications.
+              Create a new project and start receiving
+              applications.
+            </p>
+          </Link>
+
+          <Link
+            href="/organization/profile"
+            style={card}
+          >
+            <h2 style={cardTitle}>Organization Profile</h2>
+
+            <p style={cardText}>
+              Manage your organization identity,
+              website, and company information.
             </p>
           </Link>
         </section>
@@ -72,7 +100,8 @@ const page = {
   color: "white",
   display: "grid",
   gridTemplateColumns: "260px 1fr",
-  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontFamily:
+    "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
 const sidebar = {
@@ -135,7 +164,8 @@ const subtitle = {
 
 const grid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gridTemplateColumns:
+    "repeat(auto-fit, minmax(280px, 1fr))",
   gap: "20px",
 };
 

@@ -6,10 +6,15 @@ import { supabase } from "@/lib/supabase";
 
 type Task = {
   id: string;
+  organization_id: string;
   title: string;
   description: string;
   skills: string | null;
   duration: string | null;
+  profiles:
+    | { full_name: string | null }
+    | { full_name: string | null }[]
+    | null;
 };
 
 export default function StudentProjectsPage() {
@@ -27,7 +32,17 @@ export default function StudentProjectsPage() {
 
     const { data, error } = await supabase
       .from("tasks")
-      .select("id, title, description, skills, duration")
+      .select(`
+        id,
+        organization_id,
+        title,
+        description,
+        skills,
+        duration,
+        profiles:organization_id (
+          full_name
+        )
+      `)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -57,8 +72,7 @@ export default function StudentProjectsPage() {
       return;
     }
 
-    const ids = data.map((application) => application.task_id);
-    setAppliedTaskIds(ids);
+    setAppliedTaskIds(data.map((application) => application.task_id));
   };
 
   const handleApply = async (taskId: string) => {
@@ -68,6 +82,27 @@ export default function StudentProjectsPage() {
 
     if (!user) {
       alert("You must be logged in to apply.");
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) {
+      alert(profileError.message);
+      return;
+    }
+
+    if (profile?.role !== "student") {
+      alert("Only students can apply to projects.");
+      return;
+    }
+
+    if (appliedTaskIds.includes(taskId)) {
+      alert("You already applied to this project.");
       return;
     }
 
@@ -91,26 +126,13 @@ export default function StudentProjectsPage() {
   return (
     <main style={page}>
       <aside style={sidebar}>
-        <Link href="/" style={brand}>
-          TaskForge
-        </Link>
+        <Link href="/" style={brand}>TaskForge</Link>
 
         <nav style={nav}>
-          <Link href="/student" style={navItem}>
-            Overview
-          </Link>
-
-          <Link href="/student/projects" style={activeNav}>
-            Browse Projects
-          </Link>
-
-          <Link href="/student/applications" style={navItem}>
-            My Applications
-          </Link>
-
-          <Link href="/student/profile" style={navItem}>
-            Profile
-          </Link>
+          <Link href="/student" style={navItem}>Overview</Link>
+          <Link href="/student/projects" style={activeNav}>Browse Projects</Link>
+          <Link href="/student/applications" style={navItem}>My Applications</Link>
+          <Link href="/student/profile" style={navItem}>Profile</Link>
         </nav>
       </aside>
 
@@ -118,67 +140,48 @@ export default function StudentProjectsPage() {
         <header style={header}>
           <div>
             <p style={eyebrow}>PROJECT MARKETPLACE</p>
-
             <h1 style={title}>Browse Projects</h1>
-
-            <p style={subtitle}>
-              Discover real-world projects and gain experience.
-            </p>
+            <p style={subtitle}>Discover real-world projects and gain experience.</p>
           </div>
 
-          <div style={countPill}>
-            {tasks.length} projects
-          </div>
+          <div style={countPill}>{tasks.length} projects</div>
         </header>
 
         {loading ? (
-          <div style={emptyState}>
-            Loading projects...
-          </div>
+          <div style={emptyState}>Loading projects...</div>
         ) : tasks.length === 0 ? (
-          <div style={emptyState}>
-            No projects available yet.
-          </div>
+          <div style={emptyState}>No projects available yet.</div>
         ) : (
           <section style={grid}>
             {tasks.map((task) => {
               const hasApplied = appliedTaskIds.includes(task.id);
+              const organization = Array.isArray(task.profiles)
+                ? task.profiles[0]
+                : task.profiles;
 
               return (
                 <div key={task.id} style={card}>
                   <div>
-                    <h2 style={cardTitle}>{task.title}</h2>
+                    <Link href={`/organization/${task.organization_id}`} style={orgLink}>
+                      Posted by {organization?.full_name || "Unknown organization"}
+                    </Link>
 
-                    <p style={description}>
-                      {task.description}
-                    </p>
+                    <h2 style={cardTitle}>{task.title}</h2>
+                    <p style={description}>{task.description}</p>
                   </div>
 
                   <div style={footer}>
                     <div style={meta}>
-                      <span style={chip}>
-                        {task.skills || "No skills"}
-                      </span>
-
-                      <span style={chip}>
-                        {task.duration || "Flexible"}
-                      </span>
+                      <span style={chip}>{task.skills || "No skills"}</span>
+                      <span style={chip}>{task.duration || "Flexible"}</span>
                     </div>
 
                     <button
-                      style={
-                        hasApplied
-                          ? appliedButton
-                          : button
-                      }
-                      onClick={() =>
-                        handleApply(task.id)
-                      }
+                      style={hasApplied ? appliedButton : button}
+                      onClick={() => handleApply(task.id)}
                       disabled={hasApplied}
                     >
-                      {hasApplied
-                        ? "Applied"
-                        : "Apply"}
+                      {hasApplied ? "Applied" : "Apply"}
                     </button>
                   </div>
                 </div>
@@ -197,8 +200,7 @@ const page = {
   color: "white",
   display: "grid",
   gridTemplateColumns: "260px 1fr",
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
 const sidebar = {
@@ -216,10 +218,7 @@ const brand = {
   display: "block",
 };
 
-const nav = {
-  display: "grid",
-  gap: "10px",
-};
+const nav = { display: "grid", gap: "10px" };
 
 const navItem = {
   color: "#8f8f8f",
@@ -236,10 +235,7 @@ const activeNav = {
   background: "rgba(255,255,255,0.08)",
 };
 
-const content = {
-  padding: "48px",
-  maxWidth: "1200px",
-};
+const content = { padding: "48px", maxWidth: "1200px" };
 
 const header = {
   display: "flex",
@@ -261,10 +257,7 @@ const title = {
   letterSpacing: "-0.04em",
 };
 
-const subtitle = {
-  color: "#8f8f8f",
-  fontSize: "16px",
-};
+const subtitle = { color: "#8f8f8f", fontSize: "16px" };
 
 const countPill = {
   padding: "8px 12px",
@@ -293,10 +286,16 @@ const card = {
   border: "1px solid rgba(255,255,255,0.08)",
 };
 
-const cardTitle = {
-  fontSize: "20px",
+const orgLink = {
+  display: "inline-block",
+  color: "#a1a1aa",
+  fontSize: "13px",
+  fontWeight: 700,
   marginBottom: "10px",
+  textDecoration: "none",
 };
+
+const cardTitle = { fontSize: "20px", marginBottom: "10px" };
 
 const description = {
   color: "#9ca3af",
@@ -304,9 +303,7 @@ const description = {
   fontSize: "14px",
 };
 
-const footer = {
-  marginTop: "22px",
-};
+const footer = { marginTop: "22px" };
 
 const meta = {
   display: "flex",
