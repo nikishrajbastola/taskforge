@@ -21,6 +21,10 @@ export default function OrganizationOverviewPage() {
             Applicants
           </Link>
 
+          <Link href="/organization/analytics" style={navItem}>
+            Analytics
+          </Link>
+
           <Link href="/organization/post-task" style={navItem}>
             Post Task
           </Link>
@@ -39,7 +43,7 @@ export default function OrganizationOverviewPage() {
         </h1>
 
         <p style={subtitle}>
-          Post projects, review applicants, and manage
+          Post projects, review applicants, analyze engagement, and manage
           student collaboration.
         </p>
 
@@ -48,44 +52,39 @@ export default function OrganizationOverviewPage() {
             <h2 style={cardTitle}>My Tasks</h2>
 
             <p style={cardText}>
-              View and manage all projects posted by
-              your organization.
+              View and manage all projects posted by your organization.
             </p>
           </Link>
 
-          <Link
-            href="/organization/applicants"
-            style={card}
-          >
+          <Link href="/organization/applicants" style={card}>
             <h2 style={cardTitle}>Applicants</h2>
 
             <p style={cardText}>
-              Review students who applied to your
-              projects.
+              Review students who applied to your projects.
             </p>
           </Link>
 
-          <Link
-            href="/organization/post-task"
-            style={card}
-          >
+          <Link href="/organization/analytics" style={card}>
+            <h2 style={cardTitle}>Analytics</h2>
+
+            <p style={cardText}>
+              Track applications, acceptance rate, and project engagement KPIs.
+            </p>
+          </Link>
+
+          <Link href="/organization/post-task" style={card}>
             <h2 style={cardTitle}>Post a Task</h2>
 
             <p style={cardText}>
-              Create a new project and start receiving
-              applications.
+              Create a new project and start receiving applications.
             </p>
           </Link>
 
-          <Link
-            href="/organization/profile"
-            style={card}
-          >
+          <Link href="/organization/profile" style={card}>
             <h2 style={cardTitle}>Organization Profile</h2>
 
             <p style={cardText}>
-              Manage your organization identity,
-              website, and company information.
+              Manage your organization identity, website, and company information.
             </p>
           </Link>
         </section>
