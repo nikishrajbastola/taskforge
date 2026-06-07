@@ -54,6 +54,7 @@ export default function OrganizationApplicantsPage() {
 
     if (!user) {
       alert("Not logged in");
+      setLoading(false);
       return;
     }
 
@@ -115,6 +116,16 @@ export default function OrganizationApplicantsPage() {
     );
   };
 
+  const getStatusLabel = (status: string | null) => {
+    if (status === "under_review") return "UNDER REVIEW";
+    if (status === "interviewing") return "INTERVIEWING";
+    if (status === "accepted") return "ACCEPTED";
+    if (status === "rejected") return "REJECTED";
+    if (status === "completed") return "COMPLETED";
+
+    return "APPLIED";
+  };
+
   const getStatusStyle = (status: string | null) => {
     const base = {
       padding: "6px 10px",
@@ -127,12 +138,39 @@ export default function OrganizationApplicantsPage() {
       whiteSpace: "nowrap" as const,
     };
 
+    if (status === "under_review") {
+      return {
+        ...base,
+        background: "rgba(59,130,246,0.08)",
+        color: "#93c5fd",
+        border: "1px solid rgba(59,130,246,0.2)",
+      };
+    }
+
+    if (status === "interviewing") {
+      return {
+        ...base,
+        background: "rgba(168,85,247,0.08)",
+        color: "#d8b4fe",
+        border: "1px solid rgba(168,85,247,0.2)",
+      };
+    }
+
     if (status === "accepted") {
       return {
         ...base,
         background: "rgba(34,197,94,0.08)",
         color: "#86efac",
         border: "1px solid rgba(34,197,94,0.2)",
+      };
+    }
+
+    if (status === "completed") {
+      return {
+        ...base,
+        background: "rgba(20,184,166,0.08)",
+        color: "#5eead4",
+        border: "1px solid rgba(20,184,166,0.2)",
       };
     }
 
@@ -164,12 +202,15 @@ export default function OrganizationApplicantsPage() {
           <Link href="/organization" style={navItem}>
             Overview
           </Link>
+
           <Link href="/organization/tasks" style={navItem}>
             My Tasks
           </Link>
+
           <Link href="/organization/applicants" style={activeNav}>
             Applicants
           </Link>
+
           <Link href="/organization/post-task" style={navItem}>
             Post Task
           </Link>
@@ -179,16 +220,17 @@ export default function OrganizationApplicantsPage() {
       <section style={content}>
         <header style={header}>
           <div>
-            <p style={eyebrow}>APPLICATIONS</p>
+            <p style={eyebrow}>APPLICATION WORKFLOW</p>
+
             <h1 style={title}>Applicants</h1>
+
             <p style={subtitle}>
-              Review student applications across your posted projects.
+              Track student applications through review, interview, decision,
+              and completion stages.
             </p>
           </div>
 
-          <div style={countPill}>
-            {applications.length} total
-          </div>
+          <div style={countPill}>{applications.length} total</div>
         </header>
 
         {loading ? (
@@ -201,7 +243,7 @@ export default function OrganizationApplicantsPage() {
               <span>Student</span>
               <span>Project</span>
               <span>Status</span>
-              <span>Actions</span>
+              <span>Workflow Actions</span>
             </div>
 
             <div style={rows}>
@@ -220,6 +262,7 @@ export default function OrganizationApplicantsPage() {
                       <p style={studentName}>
                         {student?.full_name || "Unknown student"}
                       </p>
+
                       <p style={studentMeta}>
                         {student?.email || "No email available"}
                       </p>
@@ -241,6 +284,7 @@ export default function OrganizationApplicantsPage() {
                       <p style={projectTitle}>
                         {task?.title || "Untitled project"}
                       </p>
+
                       <p style={message}>
                         {application.message ||
                           "No application message provided."}
@@ -249,13 +293,31 @@ export default function OrganizationApplicantsPage() {
 
                     <div>
                       <span style={getStatusStyle(application.status)}>
-                        {(application.status || "pending").toUpperCase()}
+                        {getStatusLabel(application.status)}
                       </span>
                     </div>
 
                     <div style={actions}>
                       <button
-                        style={acceptButton}
+                        style={actionButton}
+                        onClick={() =>
+                          updateStatus(application.id, "under_review")
+                        }
+                      >
+                        Review
+                      </button>
+
+                      <button
+                        style={actionButton}
+                        onClick={() =>
+                          updateStatus(application.id, "interviewing")
+                        }
+                      >
+                        Interview
+                      </button>
+
+                      <button
+                        style={actionButton}
                         onClick={() =>
                           updateStatus(application.id, "accepted")
                         }
@@ -270,6 +332,15 @@ export default function OrganizationApplicantsPage() {
                         }
                       >
                         Reject
+                      </button>
+
+                      <button
+                        style={completeButton}
+                        onClick={() =>
+                          updateStatus(application.id, "completed")
+                        }
+                      >
+                        Complete
                       </button>
                     </div>
                   </div>
@@ -376,7 +447,7 @@ const panel = {
 
 const tableHeader = {
   display: "grid",
-  gridTemplateColumns: "1.2fr 1.4fr 0.6fr 0.8fr",
+  gridTemplateColumns: "1.2fr 1.4fr 0.6fr 1.2fr",
   gap: "20px",
   padding: "14px 18px",
   borderBottom: "1px solid rgba(255,255,255,0.08)",
@@ -393,7 +464,7 @@ const rows = {
 
 const row = {
   display: "grid",
-  gridTemplateColumns: "1.2fr 1.4fr 0.6fr 0.8fr",
+  gridTemplateColumns: "1.2fr 1.4fr 0.6fr 1.2fr",
   gap: "20px",
   padding: "18px",
   borderBottom: "1px solid rgba(255,255,255,0.06)",
@@ -438,10 +509,11 @@ const message = {
 
 const actions = {
   display: "flex",
+  flexWrap: "wrap" as const,
   gap: "8px",
 };
 
-const acceptButton = {
+const actionButton = {
   padding: "8px 12px",
   borderRadius: "10px",
   border: "1px solid rgba(255,255,255,0.08)",
@@ -453,14 +525,13 @@ const acceptButton = {
 };
 
 const rejectButton = {
-  padding: "8px 12px",
-  borderRadius: "10px",
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "#141414",
-  color: "#d4d4d8",
-  fontWeight: 700,
-  fontSize: "13px",
-  cursor: "pointer",
+  ...actionButton,
+  color: "#fca5a5",
+};
+
+const completeButton = {
+  ...actionButton,
+  color: "#5eead4",
 };
 
 const emptyState = {
