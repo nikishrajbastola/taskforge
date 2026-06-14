@@ -122,8 +122,53 @@ export default function OrganizationApplicantsPage() {
     if (status === "accepted") return "ACCEPTED";
     if (status === "rejected") return "REJECTED";
     if (status === "completed") return "COMPLETED";
-
     return "APPLIED";
+  };
+
+  const escapeCSV = (value: string) => {
+    return `"${value.replace(/"/g, '""')}"`;
+  };
+
+  const exportCSV = () => {
+    const headers = ["Name", "Email", "Project", "Status", "Message"];
+
+    const rows = applications.map((application) => {
+      const task = Array.isArray(application.tasks)
+        ? application.tasks[0]
+        : application.tasks;
+
+      const student = Array.isArray(application.profiles)
+        ? application.profiles[0]
+        : application.profiles;
+
+      return [
+        student?.full_name || "",
+        student?.email || "",
+        task?.title || "",
+        getStatusLabel(application.status),
+        application.message || "",
+      ];
+    });
+
+    const csvContent = [
+      headers.map(escapeCSV).join(","),
+      ...rows.map((row) => row.map(escapeCSV).join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "taskforge-applicants.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
   };
 
   const getStatusStyle = (status: string | null) => {
@@ -230,7 +275,13 @@ export default function OrganizationApplicantsPage() {
             </p>
           </div>
 
-          <div style={countPill}>{applications.length} total</div>
+          <div style={headerActions}>
+            <button style={exportButton} onClick={exportCSV}>
+              Export CSV
+            </button>
+
+            <div style={countPill}>{applications.length} total</div>
+          </div>
         </header>
 
         {loading ? (
@@ -408,6 +459,22 @@ const header = {
   justifyContent: "space-between",
   alignItems: "flex-start",
   marginBottom: "28px",
+};
+
+const headerActions = {
+  display: "flex",
+  gap: "12px",
+  alignItems: "center",
+};
+
+const exportButton = {
+  padding: "10px 14px",
+  borderRadius: "12px",
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "#111",
+  color: "white",
+  cursor: "pointer",
+  fontWeight: 700,
 };
 
 const eyebrow = {
