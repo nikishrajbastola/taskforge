@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Taskforge
 
-## Getting Started
+A full-stack platform connecting students with organizations through real-world project opportunities.
 
-First, run the development server:
+## Live Demo 
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Application:** https://taskforge-puce.vercel.app/
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Overview
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+TaskForge is a full-stack web application designed to bridge the gap between students seeking hands-on experience and organizations looking for talented individuals to work on real-world projects.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Students can create an account, browse available opportunities, apply to projects, and track their application status. Organizations can securely manage projects, review applicants, update application statuses, and monitor project activity through an analytics dashboard.
 
-## Learn More
+This project demonstrates full-stack development, authentication, database management, data visualization, and business analysis documentation.
 
-To learn more about Next.js, take a look at the following resources:
+## Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Student Portal
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Secure account registration and login
+- Browse available projects
+- View project details
+- Submit project applications
+- Track application status through a dedicated student dashboard
 
-## Deploy on Vercel
+### Organization Portal
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Secure account registration and login
+- Dedicated organization dashboard
+- Create and manage projects
+- Review student applications
+- Update application statuses
+- View analytics dashboard
+- Export applicant data to CSV
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Access Control
+
+- Role-based authentication
+- Separate dashboards for students and organizations
+- Different features available based on user role
+
+
+
